@@ -1,32 +1,63 @@
 import matplotlib.pyplot as plt
-from pathlib import Path
 import numpy as np
+from pathlib import Path
 from scipy.signal import savgol_filter
+from src.exporter import save_figure
+from src.style import apply_style
+from src import config
+from src.config import COLORS, AUTO_COLORS
 
+# ===========================
+# Color Map
+# ===========================
 
 COLORS = {
     "vacuum": "black",
-    "2h": "blue",
+    "1h": "#1f77b4",
+    "2h": "#0033ff",
+    "4h": "#ff7f0e",
     "first": "red"
 }
 
 
+def get_color(sheet):
+
+    if sheet in COLORS:
+        return COLORS[sheet]
+
+    index = abs(hash(sheet)) % len(AUTO_COLORS)
+
+    return AUTO_COLORS[index]
+
+# ===========================
+# Smooth
+# ===========================
+
+
 def smooth_curve(y):
 
-    y = np.array(y, dtype=float)
+    y = np.asarray(y, dtype=float)
 
-    if len(y) >= 11:
+    if (
+        config.SMOOTH_ENABLE
+        and len(y) >= config.SMOOTH_WINDOW
+    ):
         return savgol_filter(
             y,
-            window_length=11,
-            polyorder=3
+            window_length=config.SMOOTH_WINDOW,
+            polyorder=config.SMOOTH_POLY
         )
 
     return y
 
 
+# ===========================
+# Common Plot
+# ===========================
 
-def plot_linear(data, output):
+def _plot(data, output, log=False):
+
+    apply_style()
 
     output = Path(output)
     output.mkdir(
@@ -34,19 +65,17 @@ def plot_linear(data, output):
         exist_ok=True
     )
 
-
-    mz_list = set()
-
-    for sheet in data:
-        mz_list.update(
-            data[sheet]["mz"].keys()
-        )
+    mz_list = sorted({
+        mz
+        for sheet in data
+        for mz in data[sheet]["mz"].keys()
+    })
 
 
     for mz in mz_list:
 
-        plt.figure(
-            figsize=(5,4)
+        fig, ax = plt.subplots(
+            figsize=config.FIGSIZE
         )
 
 
@@ -56,104 +85,149 @@ def plot_linear(data, output):
                 continue
 
 
-            T = data[sheet]["temperature"]
+            x = np.asarray(
+                data[sheet]["temperature"],
+                dtype=float
+            )
+
 
             y = smooth_curve(
                 data[sheet]["mz"][mz]
             )
 
 
-            plt.plot(
-                T,
+            y = np.asarray(
                 y,
-                label=sheet,
-                linewidth=2,
-                color=COLORS.get(sheet)
+                dtype=float
             )
 
 
-        plt.xlabel(
-            "T1 Temperature (°C)"
-        )
+            if log:
 
-        plt.ylabel(
-            f"Ion Current (m/z {mz})"
-        )
+                y[y <= 0] = config.LOG_MIN_VALUE
 
 
-        plt.tick_params(
-            direction="in"
-        )
+            ax.plot(
+                x,
+                y,
+                label=sheet,
+                linewidth=config.LINE_WIDTH,
+                color=get_color(sheet)
+            )
 
 
-        plt.legend(
-            frameon=False
-        )
+        # x轴
 
-
-        plt.tight_layout()
-
-
-        plt.savefig(
-            output / f"mz_{mz}.png",
-            dpi=600
+        ax.set_xlim(
+            config.X_MIN,
+            config.X_MAX
         )
 
 
-        plt.close()
+        ax.set_xticks(
+            np.arange(
+                config.X_MIN,
+                config.X_MAX + 1,
+                config.X_INTERVAL
+            )
+        )
 
+
+        # log模式
+
+        if log:
+
+            ax.set_yscale(
+                "log",
+                base=config.LOG_BASE
+            )
+
+            ax.minorticks_on()
+
+
+
+        # 标签
+
+        ax.set_xlabel(
+            config.X_LABEL
+        )
+
+        ax.set_ylabel(
+            f"{config.Y_LABEL} (m/z {mz})"
+        )
+
+
+        # 图例
+
+        ax.legend(
+            fontsize=config.LEGEND_SIZE,
+            frameon=False,
+            loc="upper left"
+        )
+
+
+        # 去掉边框
+
+        if config.REMOVE_TOP_RIGHT_SPINE:
+
+            ax.spines["top"].set_visible(False)
+
+            ax.spines["right"].set_visible(False)
+
+
+
+        # 刻度
+
+        ax.tick_params(
+            direction="in",
+            length=6,
+            width=1.5,
+            which="major"
+        )
+
+
+        ax.tick_params(
+            direction="in",
+            length=3,
+            width=1,
+            which="minor"
+        )
+
+
+        fig.tight_layout(
+            pad=1.2
+        )
+
+
+        save_figure(
+            fig,
+            output,
+            f"mz_{mz}"
+        )
+
+
+        plt.close(fig)
+# ===========================
+# Linear
+# ===========================
+
+def plot_linear(data, output):
+
+    _plot(
+        data,
+        output,
+        log=False
+    )
+
+
+# ===========================
+# Log10
+# ===========================
 
 def plot_log(data, output):
 
-    output = Path(output)
-    output.mkdir(parents=True, exist_ok=True)
-
-    mz_list = set()
-    for sheet in data:
-        mz_list.update(data[sheet]["mz"].keys())
-
-    for mz in mz_list:
-
-        plt.figure(figsize=(5,4))
-
-        for sheet in data:
-
-            if mz not in data[sheet]["mz"]:
-                continue
-
-            T = np.array(data[sheet]["temperature"])
-
-            y = smooth_curve(
-                data[sheet]["mz"][mz]
-            )
-
-            y = np.array(y, dtype=float)
-
-            # 仅用于绘图
-            y[y <= 0] = 1e-20
-
-            plt.plot(
-                T,
-                y,
-                linewidth=2,
-                label=sheet,
-                color=COLORS.get(sheet)
-            )
-
-        plt.yscale("log", base=10)
-
-        plt.xlabel("T1 Temperature (°C)")
-        plt.ylabel(f"Ion Current (m/z {mz})")
-
-        plt.tick_params(direction="in")
-
-        plt.legend(frameon=False)
-
-        plt.tight_layout()
-
-        plt.savefig(
-            output / f"mz_{mz}.png",
-            dpi=600
-        )
-
-        plt.close()
+    _plot(
+        data,
+        output,
+        log=True
+    )

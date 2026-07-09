@@ -101,3 +101,59 @@ def plot_linear(data, output):
 
 
         plt.close()
+
+
+def plot_log(data, output):
+
+    output = Path(output)
+    output.mkdir(parents=True, exist_ok=True)
+
+    mz_list = set()
+    for sheet in data:
+        mz_list.update(data[sheet]["mz"].keys())
+
+    for mz in mz_list:
+
+        plt.figure(figsize=(5,4))
+
+        for sheet in data:
+
+            if mz not in data[sheet]["mz"]:
+                continue
+
+            T = np.array(data[sheet]["temperature"])
+
+            y = smooth_curve(
+                data[sheet]["mz"][mz]
+            )
+
+            y = np.array(y, dtype=float)
+
+            # 仅用于绘图
+            y[y <= 0] = 1e-20
+
+            plt.plot(
+                T,
+                y,
+                linewidth=2,
+                label=sheet,
+                color=COLORS.get(sheet)
+            )
+
+        plt.yscale("log", base=10)
+
+        plt.xlabel("T1 Temperature (°C)")
+        plt.ylabel(f"Ion Current (m/z {mz})")
+
+        plt.tick_params(direction="in")
+
+        plt.legend(frameon=False)
+
+        plt.tight_layout()
+
+        plt.savefig(
+            output / f"mz_{mz}.png",
+            dpi=600
+        )
+
+        plt.close()

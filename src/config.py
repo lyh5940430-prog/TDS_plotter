@@ -9,7 +9,7 @@ TDS Plotter Configuration
 # ==================================================
 
 # 图片尺寸 (inch)
-FIGSIZE = (6.5, 5.0)
+FIGSIZE = (10, 5)
 
 # 输出分辨率
 DPI = 600
@@ -29,7 +29,30 @@ LEGEND_SIZE = 12
 
 TITLE_SIZE = 16
 
+# =====================================
+# Compare Plot
+# =====================================
 
+# Compare图片尺寸
+COMPARE_FIGSIZE = (10, 5)
+
+
+# X轴范围
+COMPARE_X_MIN = 50
+COMPARE_X_MAX = 1200
+COMPARE_X_INTERVAL = 100
+
+
+# Y轴范围
+# None = 自动
+COMPARE_Y_MIN = None
+COMPARE_Y_MAX = None
+
+
+# 标题
+SHOW_TITLE = True
+
+TITLE_FONT_SIZE = 14
 
 # ==================================================
 # Line Settings
@@ -65,14 +88,26 @@ COLORS = {
 
 AUTO_COLORS = [
 
+    "black",
+
     "#1f77b4",
-    "#ff7f0e",
-    "#2ca02c",
+
     "#d62728",
+
+    "#ff7f0e",
+
     "#9467bd",
+
+    "#2ca02c",
+
     "#8c564b",
+
     "#e377c2",
-    "#7f7f7f"
+
+    "#7f7f7f",
+
+    "#17becf",
+
 ]
 # ==================================================
 # Smoothing Settings
@@ -174,5 +209,20 @@ THEMES = {
         "grid":False
 
     }
+
+}
+# =====================================
+# Compare Mode
+# =====================================
+
+NAME_MAP = {
+
+    "20260408_GZ_1421_1_3h_SIM_A": "3 h",
+
+    "20260408_GZ_1421_2_7d_SIM_A": "7 d",
+
+    "20260408_GZ_1421_3_14d_SIM_A": "14 d",
+
+    "20260506_GZ_1421_6_28d_SIM_A": "28 d",
 
 }

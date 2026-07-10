@@ -1,60 +1,92 @@
 from pathlib import Path
-
-from src.reader import load_tds_excel
-from src.plotter import plot_linear, plot_log
-from src.utils import create_output_folder
-
-
-# ==========================
-# Data file
-# ==========================
-
-file = "data/1421大气暴露.xlsx"
+from src.report import write_compare_report
+from src.reader import load_compare_folder
+from src.plotter import plot_compare
 
 
-# 自动获取实验名称
-experiment_name = Path(file).stem
+# =====================================
+# 实验设置
+# =====================================
+
+EXPERIMENT_NAME = "1421_wo_HF"
 
 
-# ==========================
-# Read data
-# ==========================
+# =====================================
+# 主程序
+# =====================================
 
-data = load_tds_excel(file)
+def main():
 
-# ==========================
-# Output folder
-# ==========================
+    # 输入数据路径
 
-linear_path = create_output_folder(
-    "output",
-    experiment_name,
-    "Linear"
-)
+    data_folder = Path(
+        "data"
+    ) / EXPERIMENT_NAME
+
+    # 输出路径
+
+    output_folder = Path(
+        "output"
+    ) / EXPERIMENT_NAME
+
+    print("=" * 50)
+
+    print(
+        "Experiment:",
+        EXPERIMENT_NAME
+    )
+
+    print(
+        "Input:",
+        data_folder
+    )
+
+    print(
+        "Output:",
+        output_folder
+    )
+
+    print("=" * 50)
+
+    # 读取数据
+
+    data = load_compare_folder(
+        data_folder
+    )
+
+    # Linear
+
+    plot_compare(
+        data,
+        output_folder / "Linear",
+        experiment_name=EXPERIMENT_NAME,
+        log=False
+    )
+
+    # Log10
+
+    plot_compare(
+        data,
+        output_folder / "Log",
+        experiment_name=EXPERIMENT_NAME,
+        log=True
+    )
+    write_compare_report(
+        data,
+        output_folder,
+        EXPERIMENT_NAME
+    )
 
 
-log_path = create_output_folder(
-    "output",
-    experiment_name,
-    "Log10"
-)
+print()
+
+print("=" * 50)
+
+print("Finished!")
+
+print("=" * 50)
 
 
-# ==========================
-# Plot
-# ==========================
+if __name__ == "__main__":
 
-plot_linear(
-    data,
-    linear_path
-)
-
-
-plot_log(
-    data,
-    log_path
-)
-
-
-print("绘图完成")
-print("实验:", experiment_name)
+    main()
